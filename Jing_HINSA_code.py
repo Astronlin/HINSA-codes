@@ -54,8 +54,8 @@ sub_cube_slab[:,5,9].quicklook()
 result=np.zeros([9,shape[1],shape[2]])
 gauss_1st=np.zeros(shape)
 
-for i in range(1):
-    for j in range(1):
+for i in range(shape[0]):
+    for j in range(shape[1]):
         print(i,j)
         spec=sub_cube_slab[:,i,j]
         popt,pcov = curve_fit(triplegauss,vel, spec,p0=p0, bounds=param_bounds)
