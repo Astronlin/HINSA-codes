@@ -2,15 +2,15 @@
 ### Last update: 04/26/2021 jzhou@smail.nju.edu.cn
 ### HINSA identification
 
+# Set possible HINSA area and velocity range using molecule gas observations
 typical_size=3
 typical_velocity_width=10
 
+# Input the infomation and data which is concluded in 'sun_17_eq'
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 import astropy.units as u
-from astropy.utils import data
 from spectral_cube import SpectralCube
 from astropy.wcs import WCS
 from reproject import reproject_interp
@@ -25,7 +25,7 @@ pixelsize=abs(hdul[0].header['CDELT1'])
 
 # In[2]:
 
-
+# Cut the area and velocity range we need, here is 36 arcmin.
 center=info[1:3].astype(float)
 center[0]+=0.1
 center[1]+=0.1
@@ -34,11 +34,12 @@ lon_range = [center[0]-0.3, center[0]+0.3] * u.deg
 sub_cube = cube.subcube(xlo=lon_range[0], xhi=lon_range[1], ylo=lat_range[0], yhi=lat_range[1])
 sub_cube_slab = sub_cube.spectral_slab((float(info[4])-30) *u.km / u.s,(float(info[4])+20) *u.km / u.s)
 print(sub_cube_slab)
+# The velocity mash is from infomation of this print message.
 vel=np.linspace(-82905.835,-82905.835+184.0307099*272,273)
 
 
 # In[3]:
-
+# First try of fitting multi-gaussian components and de-compositing. 
 
 from scipy.optimize import curve_fit
 def gaussian(x,a,x0,sigma):
@@ -102,15 +103,13 @@ print(vel[chan]/1000)
 
 
 sub_cube_slab[:,32,28].quicklook()
-param_bounds         = ([20  , -65000    ,   0    , 0    ,  -52500 , 0     ,   0 ,   -43000,      0],
-                        [100, -55000 , 10000 , 100  ,-42500, 10000,100  ,-40000, 10000])
 show_fit(sub_cube_slab[:,18,18])
-
+# We can see fitting results of many components are not consistant along the map, failure.
 
 # In[8]:
 
 
-#initial substract
+# Second try of slect target and background region, then subtract the target
 center_pixel=[int((shape[1]-1)/2),int((shape[2]-1)/2)]
 r=typical_size/60/pixelsize
 print(r)
@@ -140,11 +139,11 @@ plt.show()
 plt.plot(vel,bkg_spec)
 plt.show()
 plt.plot(vel,target_spec-bkg_spec)
-
+# Not good
 
 # In[9]:
 
-
+# Third try of taking the edge channel as model image to estimate the images in HINSA velocity range.
 model_image=(sub_cube_slab[153,:,:]+sub_cube_slab[173,:,:])/2
 import os
 os.system('rm *model*.fits')
@@ -178,7 +177,7 @@ plt.plot(vel,residual[:,17,17])
 plt.imshow(residual[167,:,:])
 hdul[0].data=residual
 fits.writeto('residual.fits',residual)
-
+# We can see obvious absorption in source Sun_17_64, not in other
 
 # In[11]:
 
@@ -188,7 +187,7 @@ fits.writeto('model.fits',cube_model)
 
 
 # In[12]:
-
+# Forth try of using 3D interpolate method to fit the data cube.
 
 from scipy.interpolate import RegularGridInterpolator
 from numpy import linspace, zeros, array
@@ -213,11 +212,11 @@ for point in region:
     T[153:173,point[0],point[1]]=fn(array(cube_fit))
 os.system('rm model_interp.fits')
 fits.writeto('model_interp.fits',T)
-
+# We set nan value of possible target HINSA region, but nan remains nan after interpolation. Have not found any method to remove a center cube in a mesh.
 
 # In[13]:
 
-
+# Fifth try of using convolution to interpolate the 2D image in each channel and then fitting the spectrum
 from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans
 kernel = Gaussian2DKernel(x_stddev=1)
 T = np.array(sub_cube_slab)
@@ -239,8 +238,7 @@ fits.writeto('residual_con.fits',residual_con)
 plt.imshow(T[155,:,:])
 print(region)
 
-
-# In[ ]:
+# Most results are simmilar to the former results of On-Off spectrum when set the HINSA area of 2 arcmin.
 
 
 
