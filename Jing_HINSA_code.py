@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
+### First version: 04/26/2021 jzhou@smail.nju.edu.cn
+### Last update: 04/26/2021 jzhou@smail.nju.edu.cn
+### HINSA identification
 
 typical_size=3
 typical_velocity_width=10
